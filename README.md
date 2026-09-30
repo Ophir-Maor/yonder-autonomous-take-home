@@ -364,18 +364,19 @@ We don't expect a perfect implementation. Those who show genuine effort and lear
 
 ## Your write-up
 
-*Candidates: replace this section with your own short write-up. Keep it to what a teammate would need to trust your implementation. Numbers from your own runs beat adjectives.*
+### Prediction recorded before the first boulders run
 
-- **Prediction.** Before running `boulders`: how many replans did you expect, and why? What did you get?
-- **Heuristic.** Which one, and why is it safe for an 8-connected grid? What goes wrong with one that overestimates? (Try it. What did you see?)
-- **Replan trigger.** Exactly what makes you replan? What deliberately does *not*? Paste your `python sim/launch.py --all` table.
-- **Unknown cells.** How does your planner treat them, and why? What happens on the very first tick under the other choice?
-- **Rover size.** How do you account for it? What happens to the run if you don't?
-- **No route.** What do you publish when there is no path, and what would go wrong if you published nothing?
-- **Time.** Which clock does your monitoring output use, and why?
-- **Ambiguity.** What did the task leave underspecified, and what call did you make?
-- **Testing.** What did you check beyond the provided tests? Which scenario or picture revealed a bug of yours?
-- **Stretch goals.** Which did you attempt, and how far did you get? (For Part 2A: what changed between your Part 1 planner and your final one, in numbers?)
+Codex prediction (human review pending): **3 replans after the initial plan**.
+The world source places four boulders on the direct route. The first boulder's
+centre is just beyond the initial 8 m sensor radius, but its near occupied cells
+are within view; the initial inflated map should already route around it.
+I expect each of the other three boulders to invalidate the remaining route once
+as it enters view. This assumes a detour does not already avoid a later boulder,
+and that partial visibility does not force multiple detour revisions. Those are
+reasons the measured count could differ. No boulders scenario has been executed
+at the time this prediction is written.
+
+Implementation results and the remaining write-up will be added after validation.
 
 ---
 
