@@ -50,3 +50,12 @@ continuing independent work, Codex used explicit per-command author/committer
 `Codex <codex@localhost>` to avoid inventing human attribution. No user Git
 identity settings were changed. Grid and initial-node snapshots had been staged
 at their milestones; separate component commits preserve those actual stages.
+
+## 4. Replan helpers
+
+**Implemented:** Nearest waypoint with lower-index ties; remaining-waypoint
+validation rejects occupied/outside cells but accepts unknown cells. Kept the
+provided waypoint contract; diagonal side checks belong in node integration.
+
+**Verified:** `.venv/bin/python -B -m unittest tests.test_replan -v`: 14 passed.
+No implementation failures were found in the helper stages.
