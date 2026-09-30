@@ -35,3 +35,18 @@ out of generic inflation to preserve its tested contract.
 
 **Tool correction:** An initial patch attempted delete/add on the same file;
 the patch tool rejected it without changes. Replaced it with an update patch.
+
+## 3. A* search
+
+**Implemented:** Octile distance, heap frontier, best-cost updates, parent
+reconstruction, occupied-start escape, unknown-space policy, and both-side
+checks for diagonals. In-bounds start==goal returns a singleton even if blocked.
+
+**Verified:** `.venv/bin/python -B -m unittest tests.test_search -v`: 18 passed,
+including optimality and the 150x150 speed test (first whole suite: 0.182 s).
+
+**History:** Git identity was absent. After requesting a preferred identity and
+continuing independent work, Codex used explicit per-command author/committer
+`Codex <codex@localhost>` to avoid inventing human attribution. No user Git
+identity settings were changed. Grid and initial-node snapshots had been staged
+at their milestones; separate component commits preserve those actual stages.
