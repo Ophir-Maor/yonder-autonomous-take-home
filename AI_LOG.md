@@ -101,3 +101,25 @@ Dijkstra optimality on 40 maps, QoS/stamps, stop-once/retry suppression/recovery
 obstacles behind/off-route, diagonal-side changes, and actual simulator recovery.
 `.venv/bin/python -B -m unittest tests.test_additional -v`: all 10 passed.
 The production implementation needed no additional correction for these cases.
+
+## 8. Full validation and controlled experiments
+
+**Implemented:** Reproducible validation and ablation scripts. No simulator or
+provided test was modified. All 59 tests (49 provided + 10 new) passed in 0.391 s.
+`--all` passed all eight rows. A batch of five fixed scenarios and 31 random seeds
+(1–23, 42, 99, 100, 223, 999, 2026, 12345, 123456) passed all 36 assertions with
+zero blocked/needless counts and matching node/scoreboard replan counters.
+
+**Experimental correction:** Manhattan distance did not worsen the two supplied
+optimality fixtures with this implementation's tie ordering (both 8.242641).
+Codex searched small synthetic maps and found seed 19: octile 11.071068 versus
+Manhattan 11.656854. The explicit fixture is preserved in tools/experiments.py.
+Treating unknown as blocked stalled open at 150 ticks without a plan. Removing
+all clearance stalled wall at 207 ticks with 150 blocked ticks. These deliberately
+inferior variants ran only inside mock contexts, never as shipped changes.
+
+**Visual verification:** Saved and inspected wall and boulders PNGs under /tmp.
+They show clearance around obstacles and clustered replan markers as obstacles
+are revealed. An image-open attempt preceded the first Matplotlib font-cache
+build finishing; waiting for process completion resolved it. No image was added
+to the repository. Live GUI mode and noisy sensors were not tested.
