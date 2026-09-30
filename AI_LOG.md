@@ -123,3 +123,24 @@ They show clearance around obstacles and clustered replan markers as obstacles
 are revealed. An image-open attempt preceded the first Matplotlib font-cache
 build finishing; waiting for process completion resolved it. No image was added
 to the repository. Live GUI mode and noisy sensors were not tested.
+
+## 9. Documentation and final review preparation
+
+**Produced:** README answers with the preserved prediction and measured outcome,
+methodology with setup and tradeoffs, and a command/result ledger in VALIDATION.md.
+No human work or unobserved success is claimed. No stretch work was attempted.
+
+**Verified:** A separate tracked `git archive` export of code commit `1293852`
+passed all 59 tests (0.373 s), reproduced the eight-row scenario table, and
+reproduced the controlled failures. It used the existing venv interpreter with
+PYTHONPATH removed; dependencies were not freshly installed. Diff checks confirmed
+sim/ and all supplied tests are unchanged, and whitespace checks passed.
+
+**Known shortcomings:** Conservative discrete inflation, approximate waypoint
+progress, fixed active-route goal assumption, no noisy-sensor strategy, and no
+any-angle segment support. No production-code failure occurred in the exercised
+cases; the incorrect replan prediction, heuristic experiment assumption, and
+minor tool-use corrections above are the actual mistakes encountered, not a
+fabricated human debugging story. Final publishing and submission remain with
+the user. The commits identify Codex explicitly rather than inventing an author
+name or email for the user.

@@ -376,7 +376,122 @@ and that partial visibility does not force multiple detour revisions. Those are
 reasons the measured count could differ. No boulders scenario has been executed
 at the time this prediction is written.
 
-Implementation results and the remaining write-up will be added after validation.
+### Observed result and authorship
+
+The first boulders run produced **11 replans**, zero needless replans, and zero
+blocked ticks, reaching in 127 ticks (25.4 simulated seconds). The estimate of
+three was too low: the sensor reveals individual cells, not whole boulders at
+once. Newly observed cells can invalidate a detour or a diagonal's side clearance
+several times around the same obstacle. Replans at ticks 1 and 2 already revised
+the initial partial view; later clusters occurred at 20/23/24, 50/51, and 76/77/78.
+The original prediction is preserved in commit `3cfb6f2` before the first run.
+
+Codex implemented, tested, and drafted this write-up under an explicit autonomous
+request; human review is pending. See [AI_LOG.md](AI_LOG.md). No production planner
+code reads hidden world state, and the simulator and supplied tests are unchanged.
+
+### Approach, coordinates, and heuristic
+
+`grid_utils.py` converts world `(x, y)` to `(row, col)` by flooring relative to the
+lower-left origin and converts cells back to their centres. This handles negative
+coordinates, arbitrary origins/resolutions, rectangular grids, and outside points.
+`search.py` runs A*, `replan.py` provides waypoint helpers, and `planner_node.py`
+handles message delivery, safety preparation, state, and monitoring.
+
+A* uses octile distance: `max(dr, dc) + (sqrt(2) - 1) * min(dr, dc)`.
+An empty eight-connected grid needs that many diagonal and cardinal moves;
+obstacles can only increase the cost. This heuristic is admissible and consistent.
+Both side cells must be passable for a diagonal. A heap provides efficient frontier
+selection; the 150x150 performance case passed, with the entire initial 18-test
+search suite taking 0.182 s on this machine.
+
+Manhattan distance overestimates diagonal travel and can sacrifice optimality.
+A controlled 8x8 example returned cost **11.656854** with Manhattan versus
+**11.071068** with octile. The two supplied tricky fixtures happened to retain
+the same optimal cost with both under this implementation's tie ordering; they
+alone do not demonstrate every bad heuristic. `python tools/experiments.py`
+reproduces the explicit counterexample without modifying production code.
+
+### Replan trigger and no-route recovery
+
+Plan initially. Thereafter, find the nearest waypoint (lower index on ties) and
+check the remaining waypoints in the current safety grid, plus the side cells of
+remaining diagonal steps. Replan when these are unsafe. Do not replan for changes
+behind the rover, unrelated map updates, confidence changes in Part 1, or a newly
+available shorter route when the existing one is safe. Publish only changed
+commands. The nearest-waypoint rule is an approximation suited to dense A* paths.
+
+If search fails, publish an empty path to stop the rover. Publishing nothing
+would leave the unsafe old route active. Keep never-planned (`None`), no-route
+(`[]`), and active-route states distinct. While stopped, retry when the effective
+blocked map, grid geometry, start cell, or goal changes; unknown-to-free updates
+alone do not change traversability. In `goal-blocked`, exactly one stop occurred
+at tick 104 and recovery at tick 144, eight simulated seconds later. Recovery and
+stop do not increment the nonempty-to-nonempty replan counter.
+
+Observed `python sim/launch.py --all` output:
+
+```text
+scenario      result           ticks  blocked  plans  replans  needless
+-----------------------------------------------------------------------
+open          REACHED            121        0      1        0         0
+boulders      REACHED            127        0     12       11         0
+wall          REACHED            136        0     19       18         0
+popup         REACHED            129        0      3        2         0
+goal-blocked  REACHED            167        0      5        3         0
+random 1      REACHED            140        0     16       15         0
+random 2      REACHED            132        0     17       16         0
+random 3      REACHED            137        0     14       13         0
+```
+
+### Unknown space, rover size, and timing
+
+The node explicitly passes `unknown_is_free=True`: the goal is outside the first
+sensor circle, so pessimistic traversal yields no initial route and no exploration.
+The controlled alternative stalled `open` after 150 ticks, with zero plans.
+
+Square inflation grows observed occupied cells by `ceil(robot_radius_m / resolution)`
+cells in a copied grid. Separate boundary preparation blocks cell centres closer
+than the requested radius to an arena wall. The generic inflation helper does not
+block boundaries, preserving its tested contract. This conservative approximation
+can reject narrow passages; it is not exact continuous geometry for arbitrary
+radii/resolutions. Removing both obstacle and boundary clearance stalled `wall`
+at tick 207 with **150 blocked ticks**, versus zero with normal preparation.
+
+Monitoring uses `msg.header.stamp` for current time and elapsed time since the last
+active-route replan. Before such a replan the elapsed field is `n/a`. The path-length
+field is the total current published polyline length, not remaining distance.
+The shim's log prefix contains wall time, but all planner timing values use
+simulation time, so faster-than-real-time runs retain meaningful timing.
+
+### Ambiguities, verification, and limitations
+
+The starter allows circular or square inflation; square rounding outward was
+chosen for simplicity and conservative clearance. Boundary safety is separate
+because generic inflation tests expect distant edge cells to remain free.
+An in-bounds start equal to goal returns a singleton even when occupied, since
+no movement is required; otherwise an occupied goal is unreachable and an
+occupied start may escape. No-route retries use effective search-input changes
+rather than repeated identical searches. The supplied scenarios have fixed goals;
+active-route goal retargeting and general rolling-map tracking are not implemented.
+
+All **59 tests** pass: 49 supplied and 10 added, including independent Dijkstra
+comparisons on 40 small maps, QoS/stamps, diagonal-side changes, and actual
+stop/recovery integration. The five fixed scenarios and **31 random seeds**
+(1–23, 42, 99, 100, 223, 999, 2026, 12345, 123456) all reached with zero blocked
+and needless ticks. Node replan counts matched the scoreboard in every batch run.
+See [VALIDATION.md](VALIDATION.md) for commands and per-seed measurements.
+
+Wall and boulders PNGs were saved and inspected. The clustered replan markers
+explain the incorrect prediction; no production implementation failure appeared
+in the exercised cases. The clearance ablation deliberately exposed a collision
+failure. These are finite tests, not a guarantee over every possible world.
+Nearest-waypoint tracking and adjacent-step diagonal checks do not support
+arbitrary looping routes or long any-angle shortcuts.
+
+No stretch goal was implemented or claimed: confidence filtering, weighted costs,
+Theta*, and Webots are deferred. `--noise` and live GUI mode were not validated.
+See [METHODOLOGY.md](METHODOLOGY.md) for setup, reasoning, and next steps.
 
 ---
 
