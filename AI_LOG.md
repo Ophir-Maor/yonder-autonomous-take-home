@@ -89,3 +89,15 @@ roughly one revision per later boulder. Actual replans occurred at ticks
 required revisions as additional cells became known; diagonal side clearance
 also changed. No scenario-specific fix was needed: all revisions were justified
 by the scoreboard. Preserve the original prediction rather than rewriting it.
+
+## 7. Stop/recovery and added edge tests
+
+**Verified:** `popup` reached in 129 ticks, 3 plans / 2 replans; the rock behind
+at tick 81 did not cause a publication. `goal-blocked` reached in 167 ticks,
+5 nonempty plans / 3 replans; stop at tick 104, recovery at tick 144 (8 seconds).
+Both had zero blocked and needless ticks. Ten new tests cover boundaries,
+fractional non-cascading inflation, unknown diagonal policy, start==goal,
+Dijkstra optimality on 40 maps, QoS/stamps, stop-once/retry suppression/recovery,
+obstacles behind/off-route, diagonal-side changes, and actual simulator recovery.
+`.venv/bin/python -B -m unittest tests.test_additional -v`: all 10 passed.
+The production implementation needed no additional correction for these cases.
