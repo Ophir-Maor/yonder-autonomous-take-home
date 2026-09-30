@@ -106,8 +106,8 @@ class Grid:
             (e.g. row -1), not row 0 — think about what int() does to -0.3
         The result may lie outside the grid; callers use in_bounds().
         """
-        # TODO: implement
-        raise NotImplementedError("Grid.world_to_cell")
+        return (math.floor((y - self.origin_y) / self.resolution),
+                math.floor((x - self.origin_x) / self.resolution))
 
     def cell_to_world(self, row: int, col: int) -> Point:
         """
@@ -116,8 +116,8 @@ class Grid:
         Paths are sequences of world points, so this is what turns the cells your
         search returns into something the rover can drive to.
         """
-        # TODO: implement
-        raise NotImplementedError("Grid.cell_to_world")
+        return (self.origin_x + (col + 0.5) * self.resolution,
+                self.origin_y + (row + 0.5) * self.resolution)
 
 
 def path_length_m(points_xy: Sequence[Point]) -> float:
@@ -145,5 +145,16 @@ def inflate(grid: Grid, radius_m: float) -> Grid:
         the cells directly next to an obstacle (up/down/left/right) are covered
         for radius >= one cell.
     """
-    # TODO: implement
-    raise NotImplementedError("inflate")
+    if radius_m < 0:
+        raise ValueError("radius_m must be nonnegative")
+    out = grid.copy()
+    # A square margin rounded outward is conservative for fractional cell radii.
+    reach = math.ceil(radius_m / grid.resolution)
+    for row in range(grid.height):
+        for col in range(grid.width):
+            if not grid.is_occupied(row, col):
+                continue
+            for rr in range(max(0, row - reach), min(grid.height, row + reach + 1)):
+                for cc in range(max(0, col - reach), min(grid.width, col + reach + 1)):
+                    out.occupancy[out.index(rr, cc)] = OCCUPIED
+    return out
