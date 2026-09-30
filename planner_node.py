@@ -39,14 +39,24 @@ class PlannerNode(Node):
         self.replan_count = 0
         self.last_replan_stamp = None
         self._last_status_stamp = None
+        self._failed_search_key = None
 
     def on_grid(self, msg: GridSnapshot) -> None:
         grid = planning_grid(msg)
         rover_xy = (msg.rover_x, msg.rover_y)
         goal_xy = (msg.goal_x, msg.goal_y)
+        # Unknown and free have the same traversal policy. A no-route search
+        # needs retrying only if its graph, start, or goal has changed.
+        search_key = (grid.width, grid.height, grid.resolution, grid.origin_x,
+                      grid.origin_y, grid.world_to_cell(*rover_xy), goal_xy,
+                      bytes(value == OCCUPIED for value in grid.occupancy))
         needed, reason = self.needs_replan(grid, rover_xy)
+        if self.path_xy == []:
+            needed = search_key != self._failed_search_key
+            reason = "no-route search inputs changed"
         if needed:
             points = self.plan(grid, rover_xy, goal_xy)
+            self._failed_search_key = search_key if not points else None
             if points != self.path_xy:
                 if points:
                     self.plan_count += 1
@@ -61,8 +71,22 @@ class PlannerNode(Node):
         self.print_status(msg.header.stamp)
 
     def needs_replan(self, grid: Grid, rover_xy) -> tuple:
-        """Initial integration: issue one route; dynamic replanning follows."""
-        return self.path_xy is None, "initial plan"
+        """Replace a route only when its remaining cells or diagonals are unsafe."""
+        if self.path_xy is None:
+            return True, "initial plan"
+        if not self.path_xy:
+            return False, "waiting for traversability change"
+        index = next_waypoint_index(self.path_xy, rover_xy)
+        if not path_is_valid(grid, self.path_xy, index):
+            return True, "path blocked ahead"
+        # Waypoints alone do not catch a newly blocked diagonal's side cells.
+        for a, b in zip(self.path_xy[index:], self.path_xy[index + 1:]):
+            ar, ac = grid.world_to_cell(*a)
+            br, bc = grid.world_to_cell(*b)
+            if ar != br and ac != bc:
+                if grid.is_occupied(ar, bc) or grid.is_occupied(br, ac):
+                    return True, "diagonal blocked ahead"
+        return False, "path still valid"
 
     def plan(self, grid: Grid, rover_xy, goal_xy):
         """Search in cells, return cell centres in world metres (or [] to stop)."""

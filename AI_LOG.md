@@ -70,3 +70,22 @@ node snapshot; dynamic behaviour was developed in the working tree afterward.
 **Verified:** All 49 supplied tests passed. `open` reached in 121 ticks (24.2 s),
 with one publication, one plan, zero replans, zero blocked ticks, zero needless
 replans. Additional message and boundary tests were developed separately.
+
+## 6. Dynamic replanning and prediction result
+
+**Implemented:** Remaining-waypoint and diagonal-side invalidation, empty stop
+commands, and recovery searches only when effective search inputs change.
+Identical commands are suppressed; stop/recovery do not increment replans.
+
+**Verified:** `wall` reached in 136 ticks with 18 replans, zero blocked and zero
+needless. The first `boulders` run, after separate prediction commit `3cfb6f2`,
+reached in 127 ticks with 12 plans / 11 replans, zero blocked and zero needless.
+The prediction was written before wall/popup development, and committed before
+any boulders execution. Other scenarios were exercised while identity was pending.
+
+**AI mistake corrected by observation:** The prediction of 3 replans assumed
+roughly one revision per later boulder. Actual replans occurred at ticks
+1, 2, 9, 20, 23, 24, 50, 51, 76, 77, 78. Even the partly visible first boulder
+required revisions as additional cells became known; diagonal side clearance
+also changed. No scenario-specific fix was needed: all revisions were justified
+by the scoreboard. Preserve the original prediction rather than rewriting it.
