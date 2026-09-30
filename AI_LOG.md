@@ -59,3 +59,14 @@ provided waypoint contract; diagonal side checks belong in node integration.
 
 **Verified:** `.venv/bin/python -B -m unittest tests.test_replan -v`: 14 passed.
 No implementation failures were found in the helper stages.
+
+## 5. Initial node integration
+
+**Implemented:** Best-effort feed subscription, reliable path publication,
+separate boundary margin, optimistic unknown-space traversal, cell-centre
+waypoints, and simulated-time monitoring. This commit is the staged initial-only
+node snapshot; dynamic behaviour was developed in the working tree afterward.
+
+**Verified:** All 49 supplied tests passed. `open` reached in 121 ticks (24.2 s),
+with one publication, one plan, zero replans, zero blocked ticks, zero needless
+replans. Additional message and boundary tests were developed separately.
